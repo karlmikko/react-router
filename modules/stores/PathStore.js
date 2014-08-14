@@ -3,6 +3,7 @@ var EventEmitter = require('events').EventEmitter;
 var supportsHistory = require('../helpers/supportsHistory');
 var HistoryLocation = require('../locations/HistoryLocation');
 var RefreshLocation = require('../locations/RefreshLocation');
+var ExecutionEnvironment = require('react/lib/ExecutionEnvironment');
 
 var CHANGE_EVENT = 'change';
 var _events = new EventEmitter;
@@ -20,6 +21,9 @@ var _location;
 var PathStore = {
 
   addChangeListener: function (listener) {
+    if (!ExecutionEnvironment.canUseDOM) 
+      return;
+
     _events.on(CHANGE_EVENT, listener);
   },
 
