@@ -14,6 +14,7 @@ var setTitle = require('../helpers/setTitle');
 var ActiveStore = require('../stores/ActiveStore');
 var PathStore = require('../stores/PathStore');
 var RouteStore = require('../stores/RouteStore');
+var ExecutionEnvironment = require('react/lib/ExecutionEnvironment');
 
 /**
  * The ref name that can be used to reference the active route component.
@@ -118,7 +119,13 @@ var Routes = React.createClass({
     if (this.props.initialPath)
       PathStore.replace(this.props.initialPath);
         
-    var initialData = window.__ReactRouter_initialData || this.props.initialData || null;
+    var initialData;
+    if (ExecutionEnvironment.canUseDOM) {
+      initialData = window.__ReactRouter_initialData;
+    } else {
+      initialData = this.props.initialData || null;
+    }
+    
     this.setStateFromPath(PathStore.getCurrentPath(), initialData);
     
     PathStore.addChangeListener(this.handlePathChange);
