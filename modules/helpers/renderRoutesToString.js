@@ -3,7 +3,7 @@ var React = require('react/addons');
 var ActiveStore = require('../stores/ActiveStore');
 var Path = require('../helpers/Path');
 var makePath = require('../helpers/makePath');
-var mergeProperties = require('../helpers/mergeProperties');
+var copyProperties = require('react/lib/copyProperties');
 var RouteStore = require('../stores/RouteStore');
 var PathStore = require('../stores/PathStore');
 var TitleStore = require('../stores/TitleStore');
@@ -120,7 +120,7 @@ function Transition(path, redirect) {
   this.redirect = redirect;
 }
 
-mergeProperties(Transition.prototype, {
+copyProperties(Transition.prototype, {
 
   abort: function () {
     throw new Error('Cannot abort on server');
