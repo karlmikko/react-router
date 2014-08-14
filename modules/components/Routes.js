@@ -10,6 +10,7 @@ var Path = require('../helpers/Path');
 var HashLocation = require('../locations/HashLocation');
 var HistoryLocation = require('../locations/HistoryLocation');
 var RefreshLocation = require('../locations/RefreshLocation');
+var setTitle = require('../helpers/setTitle');
 var ActiveStore = require('../stores/ActiveStore');
 var PathStore = require('../stores/PathStore');
 var RouteStore = require('../stores/RouteStore');
@@ -39,6 +40,17 @@ var Routes = React.createClass({
   displayName: 'Routes',
 
   statics: {
+    match: function (path, routes) {
+        var rootRoutes = routes.props.children;
+        if (!Array.isArray(rootRoutes)) {
+          rootRoutes = [rootRoutes];
+        }
+        var matches = null;
+        for (var i = 0; matches == null && i < rootRoutes.length; i++) {
+          matches = findMatches(Path.withoutQuery(path), rootRoutes[i]);
+        }
+      return matches;
+    },
 
     /**
      * Handles errors that were thrown asynchronously. By default, the
@@ -71,7 +83,9 @@ var Routes = React.createClass({
 
       if (typeof location === 'string' && !(location in NAMED_LOCATIONS))
         return new Error('Unknown location "' + location + '", see ' + componentName);
-    }
+    },
+    initialPath: React.PropTypes.string,
+    initialData: React.PropTypes.object
   },
 
   getDefaultProps: function () {
@@ -101,7 +115,31 @@ var Routes = React.createClass({
 
     PathStore.setup(this.getLocation());
 
+    if (this.props.initialPath)
+      PathStore.replace(this.props.initialPath);
+        
+    var initialData = window.__ReactRouter_initialData || this.props.initialData || null;
+    this.setStateFromPath(PathStore.getCurrentPath(), initialData);
+    
     PathStore.addChangeListener(this.handlePathChange);
+  },
+
+  setStateFromPath: function (path, initialData) {
+    var matches = this.match(path);
+    var rootMatch = (matches && getRootMatch(matches)) || false;
+    var params = (rootMatch && rootMatch.params) || {};
+    var newState = {
+      initialData: initialData,
+      matches: matches,
+      path: path,
+      activeQuery: Path.extractQuery(path) || {},
+      activeParams: params,
+      activeRoutes: matches.map(function (match) {
+        return match.route;
+      })
+    };
+    ActiveStore.updateState(newState);
+    this.setState(newState);
   },
 
   componentDidMount: function () {
@@ -133,16 +171,8 @@ var Routes = React.createClass({
    *   ).match('/posts/123'); => [ { route: <AppRoute>, params: {} },
    *                               { route: <PostRoute>, params: { id: '123' } } ]
    */
-  match: function (path) {
-    var rootRoutes = this.props.children;
-    if (!Array.isArray(rootRoutes)) {
-      rootRoutes = [rootRoutes];
-    }
-    var matches = null;
-    for (var i = 0; matches == null && i < rootRoutes.length; i++) {
-      matches = findMatches(Path.withoutQuery(path), rootRoutes[i]);
-    }
-    return matches;
+  match: function(path){
+    return this.constructor.match(path, this);
   },
 
   /**
@@ -177,6 +207,10 @@ var Routes = React.createClass({
       if (transition.isCancelled) {
         Routes.handleCancelledTransition(transition, routes);
       } else if (newState) {
+        //remove initial data from state
+        routes.setState({
+          initialData:undefined
+        });
         ActiveStore.updateState(newState);
       }
 
@@ -200,7 +234,26 @@ var Routes = React.createClass({
       return null;
 
     var matches = this.state.matches;
-    if (matches.length) {
+    if (matches && matches.length) {
+
+      for (var i=0; i<matches.length; i++) {
+        //clear all initial state data
+        matches[i].route.props.initialAsyncState = null;
+        
+        //setTitle helper on routes
+        if(matches[i].route.props.title){
+          setTitle(matches[i].route.props.title);
+        }
+      }
+      //set initial data on matched routes.
+      if (this.state.initialData) {
+        for (var i=0; i<matches.length; i++) {
+          if (this.state.initialData[i]) {
+            matches[i].route.props.initialAsyncState = this.state.initialData[i];
+          }
+        }
+      }
+
       // matches[0] corresponds to the top-most match
       return matches[0].route.props.handler(computeHandlerProps(matches, this.state.activeQuery));
     } else {
@@ -245,6 +298,7 @@ function Redirect(to, params, query) {
 function findMatches(path, route) {
   var children = route.props.children, matches;
   var params;
+  var query = Path.extractQuery(path) || {};
 
   // Check the subtree first to find the most deeply-nested match.
   if (Array.isArray(children)) {
@@ -263,7 +317,7 @@ function findMatches(path, route) {
       params[paramName] = rootParams[paramName];
     });
 
-    matches.unshift(makeMatch(route, params));
+    matches.unshift(makeMatch(route, params, query));
 
     return matches;
   }
@@ -272,13 +326,13 @@ function findMatches(path, route) {
   params = Path.extractParams(route.props.path, path);
 
   if (params)
-    return [ makeMatch(route, params) ];
+    return [ makeMatch(route, params, query) ];
 
   return null;
 }
 
-function makeMatch(route, params) {
-  return { route: route, params: params };
+function makeMatch(route, params, query) {
+  return { route: route, params: params, query: query};
 }
 
 function hasMatch(matches, match) {
@@ -296,7 +350,10 @@ function hasMatch(matches, match) {
 }
 
 function getRootMatch(matches) {
-  return matches[matches.length - 1];
+  if (matches)
+    return matches[matches.length - 1];
+
+  return false;
 }
 
 function updateMatchComponents(matches, refs) {
@@ -409,7 +466,7 @@ function checkTransitionToHooks(matches, transition) {
       var handler = match.route.props.handler;
 
       if (!transition.isCancelled && handler.willTransitionTo)
-        return handler.willTransitionTo(transition, match.params);
+        return handler.willTransitionTo(transition, match.params, match.query);
     });
   });
 
