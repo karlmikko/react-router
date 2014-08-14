@@ -128,7 +128,8 @@ var Routes = React.createClass({
     
     this.setStateFromPath(PathStore.getCurrentPath(), initialData);
     
-    PathStore.addChangeListener(this.handlePathChange);
+    if (ExecutionEnvironment.canUseDOM)
+      PathStore.addChangeListener(this.handlePathChange);
   },
 
   setStateFromPath: function (path, initialData) {
