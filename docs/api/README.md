@@ -6,12 +6,14 @@ React Router API
 - Components
   - [`Link`](/docs/api/components/Link.md)
   - [`Redirect`](/docs/api/components/Redirect.md)
+  - [`NotFound`](/docs/api/components/NotFound.md)
   - [`Route`](/docs/api/components/Route.md)
   - [`RouteHandler`](/docs/api/components/RouteHandler.md)
   - [`Routes`](/docs/api/components/Routes.md)
 
 - Misc 
   - [`transition`](/docs/api/misc/transition.md)
+  - [`setTitle`](/docs/api/misc/setTitle.md)
 
 - Mixins
   - [`ActiveState`](/docs/api/mixins/ActiveState.md)
