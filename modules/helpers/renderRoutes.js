@@ -24,7 +24,7 @@ var renderRoutes = function (routes, fullPath, staticMarkup) {
     if (!matches) {
       var error = new Error("Not route matched path.");
       error.status = error.httpStatus = 404;
-      throw err;
+      throw error;
     }
 
     if (matches.length) {
