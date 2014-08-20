@@ -44,7 +44,7 @@ var renderRoutes = function (routes, fullPath, staticMarkup) {
         }
         //getInitialAsyncState from AsyncState mixin
         if (handler.getInitialAsyncState) {
-          return handler.getInitialAsyncState(fullPath, query, function (state) {
+          return handler.getInitialAsyncState(fullPath, match.params, query, function (state) {
             initialData[i] = state;
           });
         }
