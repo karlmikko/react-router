@@ -53,7 +53,7 @@ var renderRoutesToString = function (routes, fullPath, options) {
             throw error;
           })
 
-          props.handler.willTransitionTo(transition, match.params, match.query);
+          props.handler.willTransitionTo(transition, match.params);
 
           RouteStore.unregisterAllRoutes();
         }
@@ -67,7 +67,7 @@ var renderRoutesToString = function (routes, fullPath, options) {
           var promise = new Promise(function (resolve, reject) {
             var statics = matches[j].route.props.handler;
             if (statics.getInitialAsyncState) {
-              statics.getInitialAsyncState(fullPath, query, function (state) {
+              statics.getInitialAsyncState(matches[j].params, query, function (state) {
                 initialData[j] = state;
               }).then(resolve);
             } else {
